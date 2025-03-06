@@ -1,5 +1,5 @@
-import axios from "axios";
 import React from "react";
+import axios from "axios";
 import { useState } from "react";
 
 export default function Login() {
@@ -25,14 +25,14 @@ export default function Login() {
                     <h3 className="text-center mb-4 fw-bold text-primary">Welcome Back</h3>
                     <form>
                         <div className="mb-3">
-                            <label className="form-label fw-semibold">Email</label>
+                            <label className="form-label fw-semibold d-flex justify-content-start">Email</label>
                             <div className="input-group">
                                 <span className="input-group-text bg-light"><i className="bi bi-envelope"></i></span>
                                 <input type="text" id="username" className="form-control" placeholder="Enter your email" onChange={(e) => setLogin({ ...login, username: e.target.value })} />
                             </div>
                         </div>
                         <div className="mb-3">
-                            <label className="form-label fw-semibold">Password</label>
+                            <label className="form-label fw-semibold d-flex justify-content-start">Password</label>
                             <div className="input-group">
                                 <span className="input-group-text bg-light"><i className="bi bi-lock"></i></span>
                                 <input type="password" id="password" className="form-control" placeholder="Enter your password" onChange={(e) => setLogin({ ...login, password: e.target.value })} />
