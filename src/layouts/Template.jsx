@@ -6,7 +6,7 @@ export default function Template() {
     return (
         <>
             <Navbar></ Navbar>
-            <div className="container bg-gradient" style={{ background: 'linear-gradient(135deg, #74EBD5 0%, #9FACE6 100%)'}}>
+            <div className="container">
                 <Outlet />
             </div>
         </>

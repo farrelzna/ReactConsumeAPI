@@ -1,6 +1,7 @@
 import React from "react";
 import axios from "axios";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
     // state : menyimpan data di project react
@@ -9,11 +10,20 @@ export default function Login() {
     const [login, setLogin] = useState({ username: '', password: '' });
     const [error, setError] = useState([]);
 
+    // methof untuk memanipulasi yang berhubungan dengan routing
+    let navigate = useNavigate();
+
     function loginProcess(e) {
         e.preventDefault(); //mengambil alih fungsi 
-        axios.post('http://localhost:8000/login', login)
+        axios.post('http://45.64.100.26:88/API-Lumen/public/login', login)
             .then(res => {
                 console.log(res.data);
+                // ketika berhasil login, simpan data token dan user di localstorage
+                localStorage.setItem("access_token", res.data.data.access_token);
+                // JSON.stringify mengubah json menjadi string, localstorage hanya bisa disimpan string
+                localStorage.setItem("user", JSON.stringify(res.data.data.user));
+                // urutan tidak 
+                navigate("/dashboard");
         })
         .catch(err => {
             setError(err.response.data);
@@ -23,23 +33,25 @@ export default function Login() {
 
 
     return (
-        <div className="d-flex justify-content-center align-items-center vh-100" onSubmit={(e) => loginProcess(e)}>
-            <div className="card shadow-lg p-5" style={{ maxWidth: '550px', width: '100%', borderRadius: '16px', border: 'none' }}>
+        <div className="d-flex justify-content-center align-items-center mt-5" onSubmit={(e) => loginProcess(e)}>
+            <div className="card shadow-lg p-5" style={{ maxWidth: '100%', width: '100%', borderRadius: '7px', border: 'none' }}>
                 <div className="card-body">
-                    <h3 className="text-center mb-4 fw-bold">Sign In</h3>
+                    <h3 className="text-center mb-4 fw-bold" style={{ color: '#393E46' }}>Sign In</h3>
                     <form>
                         <div className="mb-3">
                             {
                                 // object.keys(error).length : mengecek jika objeck state error pada isisnya   
                                 Object.entries(error).length > 0 ? (
                                     <div className="alert alert-danger">
-                                        <ul className=" m-2 p-2">
+                                        <ol className="alert alert-danger m-2 p-2">
+                                            {/* kalau data error tapi ada isinya lebih dari 0, looping isinya kalau gaada munculin yang bagian message, error.data perlu menggunakan object.entries karena bentuknya (li), error.message tdk perlu menggunakan karena bentuknya */}
                                             {
+                                                Object.entries(error.data).length > 0 ?
                                                 Object.entries(error.data).map(([key, value]) => (
-                                                    <li key={key}>{value}</li>
-                                                ))
+                                                    <li>{value}</li>
+                                                )) : error.message
                                             }
-                                        </ul>
+                                        </ol>
                                     </div>
                                 ) : ''
                             }
@@ -56,13 +68,13 @@ export default function Login() {
                                 <input type="password" id="password" className="form-control" placeholder="Enter your password" onChange={(e) => setLogin({ ...login, password: e.target.value })} />
                             </div>
                         </div>
-                        <button type="submit" className="btn btn-primary w-100 py-2 fw-bold">Login</button>
+                        <button type="submit" className="btn w-100 py-2 fw-bold" style={{ backgroundColor: '#00ADB5', color: 'white' }}>Login</button>
                         <div className="text-center mt-3">
-                            <a href="#" className="text-decoration-none text-primary text-opacity-75">Forgot password?</a>
+                            <a href="#" className="text-decoration-none text-opacity-75" style={{ color: '#393E46' }}>Forgot password?</a>
                         </div>
                         <div className="text-center mt-3">
                             <span className="text-muted">Don’t have an account? </span>
-                            <a href="#" className="text-decoration-none text-success">Sign Up</a>
+                            <a href="#" className="text-decoration-none" style={{ color: '#00ADB5' }}>Sign Up</a>
                         </div>
                     </form>
                 </div>
