@@ -1,54 +1,140 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+"use client"
+import { Link, useNavigate } from "react-router-dom"
+import { Bell, User, Menu } from "lucide-react"
 
-export default function Navbar() {
+const Navbar = () => {
+
     let navigate = useNavigate();
-    const isLoggedIn = localStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token");
 
-    function logoutHandler() {
-        // hapus data di localStorage ketika logout
+    function handleLogout() {
         localStorage.removeItem("access_token");
         localStorage.removeItem("user");
         navigate("/login");
     }
 
     return (
-        <nav className="navbar navbar-expand p-4 rounded-pill shadow-sm sticky-top bg-white">
-            <div className="container-fluid">
-                {/* <button
-                    className="navbar-toggler"
+        <nav className=" navbar-expand-lg navbar-light d-flex bg-white rounded shadow-sm sticky-top">
+            <div className="p-3 rounded-start" style={{ backgroundColor: '#00ADB5', color: '#fff' }}>
+                <Link className="navbar-brand fw-bold" to="/">
+                    My Inventory
+                </Link>
+            </div>
+            <div className="navbar container-fluid px-4" style={{ color: '#393E46' }}>
+                <button
+                    className="navbar-toggler border-0"
                     type="button"
                     data-bs-toggle="collapse"
-                    data-bs-target="#navbarNavAltMarkup"
-                    aria-controls="navbarNavAltMarkup"
+                    data-bs-target="#navbarContent"
+                    aria-controls="navbarContent"
                     aria-expanded="false"
                     aria-label="Toggle navigation"
-                    >
-                    <span className="navbar-toggler-icon" />
-                    </button> */}
-                <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
-                    <div className="navbar-nav">
-                        <Link className="nav-link active    " to="/">
-                            My Inventory
-                        </Link>
-                        {!isLoggedIn ? (
-                            <Link className="nav-link active" aria-current="page" to="/login">
+                >
+                    <Menu size={20} />
+                </button>
+
+                <div className="collapse navbar-collapse" id="navbarContent">
+                    <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+                        {token && (
+                            <>
+                                <li className="nav-item">
+                                    <Link className="nav-link px-3" to="/dashboard">
+                                        Dashboard
+                                    </Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link px-3" to="/dashboard/stuffs">
+                                        Inventory
+                                    </Link>
+                                </li>
+                            </>
+                        )}
+                    </ul>
+
+                    <div className="d-flex align-items-center">
+                        {!token ? (
+                            <Link className="btn btn-sm btn-primary rounded-pill px-4" to="/login">
                                 Login
                             </Link>
                         ) : (
                             <>
-                            <Link className="nav-link active" aria-current="page" to="/profile">
-                                Profile
-                            </Link>
-                            <Link className="nav-link active" aria-current="page" to="/dashboard">
-                                Dashboard
-                            </Link>
-                            <Link className="nav-link active" aria-current="page" to="/dashboard/stuffs">
-                                Stuffs
-                            </Link>
-                            <a className="nav-link active" aria-current="page" href="#" onClick={logoutHandler}>
-                                Logout
-                            </a>
+                                <div className="dropdown d-none d-sm-block me-3">
+                                    <a
+                                        className="btn btn-sm btn-light rounded-circle position-relative"
+                                        href="#"
+                                        role="button"
+                                        id="notificationDropdown"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                    >
+                                        <Bell size={18} />
+                                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                            2<span className="visually-hidden">unread notifications</span>
+                                        </span>
+                                    </a>
+                                    <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notificationDropdown">
+                                        <li>
+                                            <h6 className="dropdown-header">Notifications</h6>
+                                        </li>
+                                        <li>
+                                            <a className="dropdown-item" href="#">
+                                                New inventory item added
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a className="dropdown-item" href="#">
+                                                Stock update required
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr className="dropdown-divider" />
+                                        </li>
+                                        <li>
+                                            <a className="dropdown-item small" href="#">
+                                                View all notifications
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="dropdown">
+                                    <a
+                                        className="d-flex align-items-center text-decoration-none dropdown-toggle"
+                                        href="#"
+                                        role="button"
+                                        id="userDropdown"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                    >
+                                        <div
+                                            className="rounded-circle bg-light d-flex align-items-center justify-content-center me-2"
+                                            style={{ width: "32px", height: "32px" }}
+                                        >
+                                            <User size={16} />
+                                        </div>
+                                        <span className="d-none d-md-block">Profile</span>
+                                    </a>
+                                    <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+                                        <li>
+                                            <Link className="dropdown-item" to="/profile">
+                                                My Profile
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link className="dropdown-item" to="/settings">
+                                                Settings
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <hr className="dropdown-divider" />
+                                        </li>
+                                        <li>
+                                            <a className="dropdown-item text-danger" href="#" onClick={handleLogout}>
+                                                Logout
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </>
                         )}
                     </div>
@@ -57,3 +143,5 @@ export default function Navbar() {
         </nav>
     )
 }
+
+export default Navbar

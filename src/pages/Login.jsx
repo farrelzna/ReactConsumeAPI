@@ -41,7 +41,7 @@ export default function Login() {
                         <div className="mb-3">
                             {
                                 // object.keys(error).length : mengecek jika objeck state error pada isisnya   
-                                Object.entries(error).length > 0 ? (
+                                Object.keys(error).length > 0 ? (
                                     <div className="alert alert-danger">
                                         <ol className="alert alert-danger m-2 p-2">
                                             {/* kalau data error tapi ada isinya lebih dari 0, looping isinya kalau gaada munculin yang bagian message, error.data perlu menggunakan object.entries karena bentuknya (li), error.message tdk perlu menggunakan karena bentuknya */}

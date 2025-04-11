@@ -3,7 +3,7 @@ import App from "../App";
 import Login from "../pages/Login";
 import Profile from "../pages/Profile";
 import Dashboard from "../pages/Dashboard";
-import StuffIndex from "../pages/stuffs/index";
+import StuffIndex from "../pages/stuffs/Index";
 
 import Template from "../layouts/Template";
 import PrivatePage from "../pages/middleware/PrivatePage";
