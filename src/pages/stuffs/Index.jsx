@@ -5,6 +5,46 @@ import axios from "axios";
 import Modal from "../../components/Modal";
 import AlertSnackbar from "../../components/AlertSnackbar";
 
+// Update the calculatePercentage function to be more flexible
+const calculatePercentage = (value, total) => {
+    if (!total) return 0;
+    return Math.min(Math.round((value / total) * 100), 100);
+};
+
+// Update the StatsCard component to handle percentage values
+const StatsCard = ({ icon, color, title, value, maxValue, isPercentage }) => {
+    const percentage = calculatePercentage(value, maxValue);
+    
+    return (
+        <div className="col-xl-3 col-sm-6">
+            <div className="card bg-gradient shadow-lg border-0">
+                <div className="card-body p-4">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                        <div className="d-flex align-items-center">
+                            <div className={`rounded-circle bg-${color} bg-opacity-10 p-2 me-3`}>
+                                <i className={`bi ${icon} fs-4 text-${color}`}></i>
+                            </div>
+                            <div>
+                                <h6 className="mb-0 text-muted">{title}</h6>
+                                <h4 className="mb-0 fw-bold">
+                                    {isPercentage ? `${value}%` : value.toLocaleString()}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div className={`progress bg-${color} bg-opacity-10`} style={{ height: "4px" }}>
+                        <div 
+                            className={`progress-bar bg-${color}`} 
+                            style={{ width: `${percentage}%` }}
+                            title={`${percentage}% of ${maxValue.toLocaleString()}`}
+                        ></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function StuffIndex() {
     const [stuff, setStuffs] = useState([]);
     const [error, setError] = useState([]);
@@ -36,6 +76,80 @@ export default function StuffIndex() {
         }
     });
 
+    const [formInbound, setFormInbound] = useState({
+        stuff_id: "",
+        stuffName: "", // Add this to show item name in modal
+        total: "",
+        proof_file: null,
+        error: null
+    });
+
+    const [isModalInboundOpen, setIsModalInboundOpen] = useState(false);
+
+    // Add these new states after your existing states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(15);
+
+    // Add this pagination component
+    const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }) => {
+        const pageNumbers = Math.ceil(totalItems / itemsPerPage);
+        
+        return (
+            <nav className="d-flex justify-content-end p-3">
+                <ul className="pagination pagination-sm mb-0">
+                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button 
+                            className="page-link" 
+                            onClick={() => onPageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </button>
+                    </li>
+                    {[...Array(pageNumbers)].map((_, index) => (
+                        <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                            <button 
+                                className="page-link" 
+                                onClick={() => onPageChange(index + 1)}
+                            >
+                                {index + 1}
+                            </button>
+                        </li>
+                    ))}
+                    <li className={`page-item ${currentPage === pageNumbers ? 'disabled' : ''}`}>
+                        <button 
+                            className="page-link" 
+                            onClick={() => onPageChange(currentPage + 1)}
+                            disabled={currentPage === pageNumbers}
+                        >
+                            Next
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        );
+    };
+
+    // Add this pagination helper function
+    const paginate = (items) => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return items.slice(indexOfFirstItem, indexOfLastItem);
+    };
+
+    // Calculate the totals
+    const totalItems = stuff.length;
+    const totalStock = filteredStuff.reduce((total, item) => 
+        total + (item.stuff_stock?.total_available || 0), 0);
+    const totalDefec = filteredStuff.reduce((total, item) => 
+        total + (item.stuff_stock?.total_defec || 0), 0);
+    const grandTotal = totalStock + totalDefec;
+
+    // Calculate stock health percentage
+    const stockHealthPercentage = totalStock + totalDefec > 0 
+        ? Math.round((totalStock / (totalStock + totalDefec)) * 100)
+        : 0;
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -50,11 +164,7 @@ export default function StuffIndex() {
     }, [search, stuff]);
 
     function fetchData() {
-        axios.get(`${API_URL}/stuffs`, {
-            headers: {
-                Authorization: "Bearer " + localStorage.getItem("access_token"),
-            },
-        })
+        axios.get(`${API_URL}/stuffs`)
             .then((res) => {
                 setStuffs(res.data.data);
             })
@@ -70,11 +180,7 @@ export default function StuffIndex() {
 
     function handleSubmitModal(e) {
         e.preventDefault();
-        axios.post(API_URL + "/stuffs", formModal, {
-            headers: {
-                Authorization: "Bearer " + localStorage.getItem("access_token")
-            }
-        })
+        axios.post(API_URL + "/stuffs", formModal)
             .then(res => {
                 setIsModalOpen(false);
                 setModalError(null);
@@ -102,11 +208,7 @@ export default function StuffIndex() {
     }
 
     function handleConfirmDelete() {
-        axios.delete(`${API_URL}/stuffs/${deleteModal.stuffId}`, {
-            headers: {
-                Authorization: "Bearer " + localStorage.getItem("access_token")
-            }
-        })
+        axios.delete(`${API_URL}/stuffs/${deleteModal.stuffId}`)
             .then(res => {
                 setDeleteModal({
                     isOpen: false,
@@ -162,70 +264,114 @@ export default function StuffIndex() {
         axios({
             method: 'patch',
             url: `${API_URL}/stuffs/${editModal.stuffId}`,
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem("access_token")}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
             data: {
                 name: name.trim(),
                 type: type.trim()
             }
         })
-        .then(response => {
-            console.log("Edit success:", response); // Debug log
-            
-            // Reset modal state
-            setEditModal({
-                isOpen: false,
-                stuffId: null,
-                error: null,
-                data: { name: '', type: '' }
-            });
+            .then(response => {
+                console.log("Edit success:", response); // Debug log
 
-            // Show success alert
+                // Reset modal state
+                setEditModal({
+                    isOpen: false,
+                    stuffId: null,
+                    error: null,
+                    data: { name: '', type: '' }
+                });
+
+                // Show success alert
+                setAlert({
+                    message: "Item updated successfully",
+                    severity: "success"
+                });
+
+                // Refresh data
+                fetchData();
+            })
+            .catch(error => {
+                console.error("Edit error:", error.response || error); // Debug log
+
+                if (error.response?.status === 401) {
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("user");
+                    navigate("/login");
+                    return;
+                }
+
+                setEditModal(prev => ({
+                    ...prev,
+                    error: error.response?.data || {
+                        message: "Failed to update item. Please try again."
+                    }
+                }));
+
+                setAlert({
+                    message: "Failed to update item",
+                    severity: "error"
+                });
+            });
+    }
+
+    function handleInboundBtn(item) {
+        setFormInbound({
+            stuff_id: item.id,
+            stuffName: item.name,
+            total: "",
+            proof_file: null,
+            error: null
+        });
+        setIsModalInboundOpen(true);
+    }
+
+    function handleInboundSubmit(e) {
+        e.preventDefault();
+
+        // Validation
+        if (!formInbound.total || !formInbound.proof_file) {
+            setFormInbound(prev => ({
+                ...prev,
+                error: "Total items and proof image are required"
+            }));
+            return;
+        }
+
+        const data = new FormData();
+        data.append("stuff_id", formInbound.stuff_id);
+        data.append("total", formInbound.total);
+        data.append("proof_file", formInbound.proof_file);
+
+        axios.post(API_URL + "/inbound-stuffs", data)
+        .then(res => {
+            setIsModalInboundOpen(false);
+            setFormInbound({
+                stuff_id: "",
+                stuffName: "",
+                total: "",
+                proof_file: null,
+                error: null
+            });
             setAlert({
-                message: "Item updated successfully",
+                message: "Stock added successfully!",
                 severity: "success"
             });
-
-            // Refresh data
             fetchData();
         })
-        .catch(error => {
-            console.error("Edit error:", error.response || error); // Debug log
-
-            if (error.response?.status === 401) {
+        .catch(err => {
+            if (err.response?.status === 401) {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("user");
                 navigate("/login");
                 return;
             }
-
-            setEditModal(prev => ({
+            setFormInbound(prev => ({
                 ...prev,
-                error: error.response?.data || { 
-                    message: "Failed to update item. Please try again." 
-                }
+                error: err.response?.data?.message || "Failed to add stock"
             }));
-
-            setAlert({
-                message: "Failed to update item",
-                severity: "error"
-            });
         });
     }
 
-    function handleChangeEditField(field, value) {
-        setEditModal(prev => ({
-            ...prev,
-            data: {
-                ...prev.data,
-                [field]: value
-            }
-        }));
-    }
-
+    // Use in your JSX
     return (
         <>
             <AlertSnackbar
@@ -241,95 +387,37 @@ export default function StuffIndex() {
 
             <div className="container mt-5">
 
+                {/* Replace your existing stats cards with this */}
                 <div className="row mb-4 g-3">
-                    <div className="col-xl-3 col-sm-6">
-                        <div className="card bg-gradient shadow-lg border-0">
-                            <div className="card-body p-4">
-                                <div className="d-flex align-items-center justify-content-between mb-2">
-                                    <div className="d-flex align-items-center">
-                                        <div className="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
-                                            <i className="bi bi-box fs-4 text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <h6 className="mb-0 text-muted">Total Items</h6>
-                                            <h4 className="mb-0 fw-bold">{stuff.length}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="progress bg-primary bg-opacity-10" style={{ height: "4px" }}>
-                                    <div className="progress-bar bg-primary" style={{ width: "70%" }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-sm-6">
-                        <div className="card bg-gradient shadow-lg border-0">
-                            <div className="card-body p-4">
-                                <div className="d-flex align-items-center justify-content-between mb-2">
-                                    <div className="d-flex align-items-center">
-                                        <div className="rounded-circle bg-success bg-opacity-10 p-2 me-3">
-                                            <i className="bi bi-boxes fs-4 text-success"></i>
-                                        </div>
-                                        <div>
-                                            <h6 className="mb-0 text-muted">Total Stock</h6>
-                                            <h4 className="mb-0 fw-bold">
-                                                {filteredStuff.reduce((total, item) => total + (item.stuff_stock?.total_available || 0), 0)}
-                                            </h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="progress bg-success bg-opacity-10" style={{ height: "4px" }}>
-                                    <div className="progress-bar bg-success" style={{ width: "65%" }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-sm-6">
-                        <div className="card bg-gradient shadow-lg border-0">
-                            <div className="card-body p-4">
-                                <div className="d-flex align-items-center justify-content-between mb-2">
-                                    <div className="d-flex align-items-center">
-                                        <div className="rounded-circle bg-danger bg-opacity-10 p-2 me-3">
-                                            <i className="bi bi-exclamation-triangle fs-4 text-danger"></i>
-                                        </div>
-                                        <div>
-                                            <h6 className="mb-0 text-muted">Total Defec</h6>
-                                            <h4 className="mb-0 fw-bold">
-                                                {filteredStuff.reduce((total, item) => total + (item.stuff_stock?.total_defec || 0), 0)}
-                                            </h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="progress bg-danger bg-opacity-10" style={{ height: "4px" }}>
-                                    <div className="progress-bar bg-danger" style={{ width: "45%" }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-sm-6">
-                        <div className="card bg-gradient shadow-lg border-0">
-                            <div className="card-body p-4">
-                                <div className="d-flex align-items-center justify-content-between mb-2">
-                                    <div className="d-flex align-items-center">
-                                        <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
-                                            <i className="bi bi-graph-up fs-4 text-info"></i>
-                                        </div>
-                                        <div>
-                                            <h6 className="mb-0 text-muted">Grand Total</h6>
-                                            <h4 className="mb-0 fw-bold">
-                                                {filteredStuff.reduce((total, item) =>
-                                                    total + ((item.stuff_stock?.total_available || 0) + (item.stuff_stock?.total_defec || 0)), 0
-                                                )}
-                                            </h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="progress bg-info bg-opacity-10" style={{ height: "4px" }}>
-                                    <div className="progress-bar bg-info" style={{ width: "80%" }}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <StatsCard
+                        icon="bi-box"
+                        color="primary"
+                        title="Total Items"
+                        value={totalItems}
+                        maxValue={grandTotal}
+                    />
+                    <StatsCard
+                        icon="bi-boxes"
+                        color="success"
+                        title="Total Stock"
+                        value={totalStock}
+                        maxValue={grandTotal}
+                    />
+                    <StatsCard
+                        icon="bi-exclamation-triangle"
+                        color="danger"
+                        title="Total Defec"
+                        value={totalDefec}
+                        maxValue={grandTotal}
+                    />
+                    <StatsCard
+                        icon="bi-heart"
+                        color="info"
+                        title="Stock Health"
+                        value={stockHealthPercentage}
+                        maxValue={100}
+                        isPercentage={true} // Add this prop
+                    />
                 </div>
 
                 <div className="card border-0 shadow-lg">
@@ -362,18 +450,22 @@ export default function StuffIndex() {
                                 <thead className="bg-light">
                                     <tr>
                                         <th className="py-3 px-4">#</th>
-                                        <th className="py-3 px-4">Nama Barang</th>
-                                        <th className="py-3 px-4">Stok</th>
-                                        <th className="py-3 px-4">Rusak</th>
-                                        <th className="py-3 px-4 text-center">Aksi</th>
+                                        <th className="py-3 px-4">Items</th>
+                                        <th className="py-3 px-4">Type</th>
+                                        <th className="py-3 px-4">Stock Available</th>
+                                        <th className="py-3 px-4">Stock Defective</th>
+                                        <th className="py-3 px-4 text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredStuff.length > 0 ? (
-                                        filteredStuff.map((item, index) => (
+                                        paginate(filteredStuff).map((item, index) => (
                                             <tr key={item.id}>
-                                                <td className="py-3 px-4">{index + 1}</td>
+                                                <td className="py-3 px-4">
+                                                    {((currentPage - 1) * itemsPerPage) + index + 1}
+                                                </td>
                                                 <td className="py-3 px-4 fw-semibold">{item.name}</td>
+                                                <td className="py-3 px-4 fw-semibold" >{item.type}</td>
                                                 <td className="py-3 px-4">
                                                     <span className="badge bg-success bg-opacity-10 text-success px-3 py-2">
                                                         {item.stuff_stock?.total_available || 0}
@@ -391,7 +483,7 @@ export default function StuffIndex() {
                                                     <div className="d-flex justify-content-center gap-2">
                                                         <button
                                                             className="btn btn-soft-success btn-outline-success btn-sm px-3"
-                                                            onClick={() => navigate(`/stuffs/${item.id}/add`)}
+                                                            onClick={() => handleInboundBtn(item)} // Changed from value.id to item.id
                                                         >
                                                             <i className="bi bi-plus-lg me-1"></i>
                                                             Add Stock
@@ -416,7 +508,7 @@ export default function StuffIndex() {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={5} className="text-center py-4 text-muted">
+                                            <td colSpan={6} className="text-center py-4 text-muted">
                                                 <i className="bi bi-inbox fs-1 d-block mb-2"></i>
                                                 Tidak ada data ditemukan.
                                             </td>
@@ -425,10 +517,18 @@ export default function StuffIndex() {
                                 </tbody>
                             </table>
                         </div>
+                        {filteredStuff.length > 0 && (
+                            <Pagination
+                                totalItems={filteredStuff.length}
+                                itemsPerPage={itemsPerPage}
+                                currentPage={currentPage}
+                                onPageChange={setCurrentPage}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
-            
+
             <Modal isOpen={isModalOpen} onclose={() => setIsModalOpen(false)} title="Add new Stuff">
                 <form onSubmit={handleSubmitModal}>
                     <div className="mb-4">
@@ -584,13 +684,109 @@ export default function StuffIndex() {
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="btn btn-warning"
                             disabled={!editModal.data.name || !editModal.data.type}
                         >
                             <i className="bi bi-check-lg me-2"></i>
                             Update
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal 
+                isOpen={isModalInboundOpen} 
+                onclose={() => {
+                    setIsModalInboundOpen(false);
+                    setFormInbound({
+                        stuff_id: "",
+                        stuffName: "",
+                        total: "",
+                        proof_file: null,
+                        error: null
+                    });
+                }} 
+                title={`Add Stock - ${formInbound.stuffName}`}
+            >
+                <form onSubmit={handleInboundSubmit} className="needs-validation" noValidate>
+                    {formInbound.error && (
+                        <div className="alert alert-danger d-flex align-items-center" role="alert">
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>{formInbound.error}</div>
+                        </div>
+                    )}
+
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold">
+                            Total Items <span className="text-danger">*</span>
+                        </label>
+                        <input
+                            type="number"
+                            className={`form-control ${formInbound.error && !formInbound.total ? 'is-invalid' : ''}`}
+                            value={formInbound.total}
+                            onChange={(e) => setFormInbound(prev => ({
+                                ...prev,
+                                total: e.target.value,
+                                error: null
+                            }))}
+                            placeholder="Enter total items"
+                            min="1"
+                            required
+                        />
+                        {formInbound.error && !formInbound.total && (
+                            <div className="invalid-feedback">Total items is required</div>
+                        )}
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold">
+                            Proof Image <span className="text-danger">*</span>
+                        </label>
+                        <input
+                            type="file"
+                            className={`form-control ${formInbound.error && !formInbound.proof_file ? 'is-invalid' : ''}`}
+                            onChange={(e) => setFormInbound(prev => ({
+                                ...prev,
+                                proof_file: e.target.files[0],
+                                error: null
+                            }))}
+                            accept="image/*"
+                            required
+                        />
+                        {formInbound.error && !formInbound.proof_file && (
+                            <div className="invalid-feedback">Proof image is required</div>
+                        )}
+                        <small className="text-muted">
+                            Supported formats: JPG, PNG, GIF (max 2MB)
+                        </small>
+                    </div>
+
+                    <div className="d-flex justify-content-end gap-2">
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                setIsModalInboundOpen(false);
+                                setFormInbound({
+                                    stuff_id: "",
+                                    stuffName: "",
+                                    total: "",
+                                    proof_file: null,
+                                    error: null
+                                });
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn btn-success"
+                            disabled={!formInbound.total || !formInbound.proof_file}
+                        >
+                            <i className="bi bi-plus-lg me-2"></i>
+                            Add Stock
                         </button>
                     </div>
                 </form>

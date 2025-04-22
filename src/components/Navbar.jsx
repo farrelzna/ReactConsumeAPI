@@ -47,6 +47,11 @@ const Navbar = () => {
                                         Inventory
                                     </Link>
                                 </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link px-3" to="/dashboard/inbound">
+                                        Inbound
+                                    </Link>
+                                </li>
                             </>
                         )}
                     </ul>
@@ -58,45 +63,6 @@ const Navbar = () => {
                             </Link>
                         ) : (
                             <>
-                                <div className="dropdown d-none d-sm-block me-3">
-                                    <a
-                                        className="btn btn-sm btn-light rounded-circle position-relative"
-                                        href="#"
-                                        role="button"
-                                        id="notificationDropdown"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                    >
-                                        <Bell size={18} />
-                                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                            2<span className="visually-hidden">unread notifications</span>
-                                        </span>
-                                    </a>
-                                    <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notificationDropdown">
-                                        <li>
-                                            <h6 className="dropdown-header">Notifications</h6>
-                                        </li>
-                                        <li>
-                                            <a className="dropdown-item" href="#">
-                                                New inventory item added
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a className="dropdown-item" href="#">
-                                                Stock update required
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <hr className="dropdown-divider" />
-                                        </li>
-                                        <li>
-                                            <a className="dropdown-item small" href="#">
-                                                View all notifications
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-
                                 <div className="dropdown">
                                     <a
                                         className="d-flex align-items-center text-decoration-none dropdown-toggle"

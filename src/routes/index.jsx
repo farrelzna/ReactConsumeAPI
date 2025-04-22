@@ -4,6 +4,7 @@ import Login from "../pages/Login";
 import Profile from "../pages/Profile";
 import Dashboard from "../pages/Dashboard";
 import StuffIndex from "../pages/stuffs/Index";
+import InboundIndex from "../pages/inbound/index";
 
 import Template from "../layouts/Template";
 import PrivatePage from "../pages/middleware/PrivatePage";
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
                     { path: "dashboard", element: <Dashboard /> },
                     { path: "profile", element: <Profile /> }   ,
                     { path: "dashboard/stuffs", element: <StuffIndex /> }, 
+                    { path: "dashboard/inbound", element: <InboundIndex /> }, 
                 ]
             },  
         ]
