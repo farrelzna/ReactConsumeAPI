@@ -11,10 +11,6 @@ export default function Dashboard() {
         recentActivities: []
     });
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
-
     const fetchDashboardData = async () => {
         try {
             const response = await axios.get(`${API_URL}/stuffs`);
@@ -34,8 +30,12 @@ export default function Dashboard() {
         }
     };
 
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
     return (
-        <div className="container py-5">
+        <div className="container">
             {/* Welcome Section */}
             <div className="row mb-4">
                 <div className="col-12">
@@ -50,9 +50,9 @@ export default function Dashboard() {
 
             <div className="row g-3 mb-4">
                 <div className="col-xl-3 col-sm-6">
-                    <div className="card bg-gradient shadow-lg border-0">
+                    <div className="card bg-gradient shadow-sm border-0">
                         <div className="card-body p-4">
-                            <div className="d-flex align-items-center justify-content-between mb-2">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
                                 <div className="d-flex align-items-center">
                                     <div className="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
                                         <i className="bi bi-box fs-4 text-primary"></i>
@@ -76,9 +76,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="col-xl-3 col-sm-6">
-                    <div className="card bg-gradient shadow-lg border-0">
+                    <div className="card bg-gradient shadow-sm border-0">
                         <div className="card-body p-4">
-                            <div className="d-flex align-items-center justify-content-between mb-2">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
                                 <div className="d-flex align-items-center">
                                     <div className="rounded-circle bg-success bg-opacity-10 p-2 me-3">
                                         <i className="bi bi-boxes fs-4 text-success"></i>
@@ -102,9 +102,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="col-xl-3 col-sm-6">
-                    <div className="card bg-gradient shadow-lg border-0">
+                    <div className="card bg-gradient shadow-sm border-0">
                         <div className="card-body p-4">
-                            <div className="d-flex align-items-center justify-content-between mb-2">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
                                 <div className="d-flex align-items-center">
                                     <div className="rounded-circle bg-danger bg-opacity-10 p-2 me-3">
                                         <i className="bi bi-exclamation-triangle fs-4 text-danger"></i>
@@ -128,9 +128,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="col-xl-3 col-sm-6">
-                    <div className="card bg-gradient shadow-lg border-0">
+                    <div className="card bg-gradient shadow-sm border-0">
                         <div className="card-body p-4">
-                            <div className="d-flex align-items-center justify-content-between mb-2">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
                                 <div className="d-flex align-items-center">
                                     <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
                                         <i className="bi bi-heart fs-4 text-info"></i>
@@ -160,12 +160,12 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="card border-0 shadow-lg">
+            <div className="card border-0 shadow-sm">
                 <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h5 className="mb-0 fw-bold text-dark">Latest Items</h5>
                     <div className="d-flex gap-2">
                         <Link
-                            className="btn btn-primary btn-sm px-3 d-flex align-items-center gap-2"
+                            className="btn btn-dark btn-sm px-3 d-flex align-items-center gap-2"
                             to={"/dashboard/stuffs"}
                         >
                             <span>See More</span>
@@ -190,12 +190,12 @@ export default function Dashboard() {
                                         <td className="py-3 px-4 fw-semibold">{item.name}</td>
                                         <td className="py-3 px-4 fw-semibold" >{item.type}</td>
                                         <td className="py-3 px-4">
-                                            <span className="badge bg-success bg-opacity-10 text-success px-3">
+                                            <span className="badge bg-success bg-opacity-10 text-success px-3" style={{ width: "100px" }}>
                                                 {item.stuff_stock?.total_available || 0}
                                             </span>
                                         </td>
                                         <td className="py-3 px-4">
-                                            <span className="badge bg-danger bg-opacity-10 text-danger px-3">
+                                            <span className="badge bg-danger bg-opacity-10 text-danger px-3" style={{ width: "100px" }}>
                                                 {item.stuff_stock?.total_defec || 0}
                                             </span>
                                         </td>

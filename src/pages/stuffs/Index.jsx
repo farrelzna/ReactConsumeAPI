@@ -4,46 +4,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Modal from "../../components/Modal";
 import AlertSnackbar from "../../components/AlertSnackbar";
-
-// Update the calculatePercentage function to be more flexible
-const calculatePercentage = (value, total) => {
-    if (!total) return 0;
-    return Math.min(Math.round((value / total) * 100), 100);
-};
-
-// Update the StatsCard component to handle percentage values
-const StatsCard = ({ icon, color, title, value, maxValue, isPercentage }) => {
-    const percentage = calculatePercentage(value, maxValue);
-    
-    return (
-        <div className="col-xl-3 col-sm-6">
-            <div className="card bg-gradient shadow-lg border-0">
-                <div className="card-body p-4">
-                    <div className="d-flex align-items-center justify-content-between mb-2">
-                        <div className="d-flex align-items-center">
-                            <div className={`rounded-circle bg-${color} bg-opacity-10 p-2 me-3`}>
-                                <i className={`bi ${icon} fs-4 text-${color}`}></i>
-                            </div>
-                            <div>
-                                <h6 className="mb-0 text-muted">{title}</h6>
-                                <h4 className="mb-0 fw-bold">
-                                    {isPercentage ? `${value}%` : value.toLocaleString()}
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div className={`progress bg-${color} bg-opacity-10`} style={{ height: "4px" }}>
-                        <div 
-                            className={`progress-bar bg-${color}`} 
-                            style={{ width: `${percentage}%` }}
-                            title={`${percentage}% of ${maxValue.toLocaleString()}`}
-                        ></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 export default function StuffIndex() {
     const [stuff, setStuffs] = useState([]);
@@ -93,13 +55,13 @@ export default function StuffIndex() {
     // Add this pagination component
     const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }) => {
         const pageNumbers = Math.ceil(totalItems / itemsPerPage);
-        
+
         return (
             <nav className="d-flex justify-content-end p-3">
                 <ul className="pagination pagination-sm mb-0">
                     <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                        <button 
-                            className="page-link" 
+                        <button
+                            className="page-link"
                             onClick={() => onPageChange(currentPage - 1)}
                             disabled={currentPage === 1}
                         >
@@ -108,8 +70,8 @@ export default function StuffIndex() {
                     </li>
                     {[...Array(pageNumbers)].map((_, index) => (
                         <li key={index} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
-                            <button 
-                                className="page-link" 
+                            <button
+                                className="page-link"
                                 onClick={() => onPageChange(index + 1)}
                             >
                                 {index + 1}
@@ -117,8 +79,8 @@ export default function StuffIndex() {
                         </li>
                     ))}
                     <li className={`page-item ${currentPage === pageNumbers ? 'disabled' : ''}`}>
-                        <button 
-                            className="page-link" 
+                        <button
+                            className="page-link"
                             onClick={() => onPageChange(currentPage + 1)}
                             disabled={currentPage === pageNumbers}
                         >
@@ -137,20 +99,90 @@ export default function StuffIndex() {
         return items.slice(indexOfFirstItem, indexOfLastItem);
     };
 
+    // Update the calculatePercentage function to be more flexible
+    const calculatePercentage = (value, total) => {
+        if (!total) return 0;
+        return Math.min(Math.round((value / total) * 100), 100);
+    };
+
+    // Update the StatsCard component to handle percentage values
+    const StatsCard = ({ icon, color, title, value, maxValue, isPercentage }) => {
+        const percentage = calculatePercentage(value, maxValue);
+
+        return (
+            <div className="col-xl-3 col-sm-6">
+                <div className="card bg-gradient shadow-sm border-0">
+                    <div className="card-body p-4">
+                        <div className="d-flex align-items-center justify-content-center mb-2">
+                            <div className="d-flex align-items-center">
+                                <div className={`rounded-circle bg-${color} bg-opacity-10 p-2 me-3`}>
+                                    <i className={`bi ${icon} fs-4 text-${color}`}></i>
+                                </div>
+                                <div>
+                                    <h6 className="mb-0 text-muted">{title}</h6>
+                                    <h4 className="mb-0 fw-bold">
+                                        {isPercentage ? `${value}%` : value.toLocaleString()}
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={`progress bg-${color} bg-opacity-10`} style={{ height: "4px" }}>
+                            <div
+                                className={`progress-bar bg-${color}`}
+                                style={{ width: `${percentage}%` }}
+                                title={`${percentage}% of ${maxValue.toLocaleString()}`}
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // Calculate the totals
     const totalItems = stuff.length;
-    const totalStock = filteredStuff.reduce((total, item) => 
+    const totalStock = filteredStuff.reduce((total, item) =>
         total + (item.stuff_stock?.total_available || 0), 0);
-    const totalDefec = filteredStuff.reduce((total, item) => 
+    const totalDefec = filteredStuff.reduce((total, item) =>
         total + (item.stuff_stock?.total_defec || 0), 0);
     const grandTotal = totalStock + totalDefec;
 
     // Calculate stock health percentage
-    const stockHealthPercentage = totalStock + totalDefec > 0 
+    const stockHealthPercentage = totalStock + totalDefec > 0
         ? Math.round((totalStock / (totalStock + totalDefec)) * 100)
         : 0;
 
     const navigate = useNavigate();
+
+    // Export to Excel function
+    function exportExcel() {
+        // Create a new workbook and add the worksheet
+        const formattedData = stuff.map((item, index) => ({
+            No: index + 1,
+            Name: item.name,
+            Type: item.type,
+            TotalAvailable: item.stuff_stock ? item.stuff_stock.total_available : 0,
+            TotalDefec: item.stuff_stock ? item.stuff_stock.total_defec : 0,
+            CreatedAt: new Intl.DateTimeFormat('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                // hour12: false
+            }).format(new Date(item.created_at))
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+        const excelBuffer = XLSX.write(workbook, {
+            bookType: "xlsx",
+            type: "array",
+        });
+        const file = new Blob([excelBuffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+        })
+        saveAs(file, "data_stuffs.xlsx");
+    }
 
     useEffect(() => {
         fetchData();
@@ -342,33 +374,33 @@ export default function StuffIndex() {
         data.append("proof_file", formInbound.proof_file);
 
         axios.post(API_URL + "/inbound-stuffs", data)
-        .then(res => {
-            setIsModalInboundOpen(false);
-            setFormInbound({
-                stuff_id: "",
-                stuffName: "",
-                total: "",
-                proof_file: null,
-                error: null
+            .then(res => {
+                setIsModalInboundOpen(false);
+                setFormInbound({
+                    stuff_id: "",
+                    stuffName: "",
+                    total: "",
+                    proof_file: null,
+                    error: null
+                });
+                setAlert({
+                    message: "Stock added successfully!",
+                    severity: "success"
+                });
+                fetchData();
+            })
+            .catch(err => {
+                if (err.response?.status === 401) {
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("user");
+                    navigate("/login");
+                    return;
+                }
+                setFormInbound(prev => ({
+                    ...prev,
+                    error: err.response?.data?.message || "Failed to add stock"
+                }));
             });
-            setAlert({
-                message: "Stock added successfully!",
-                severity: "success"
-            });
-            fetchData();
-        })
-        .catch(err => {
-            if (err.response?.status === 401) {
-                localStorage.removeItem("access_token");
-                localStorage.removeItem("user");
-                navigate("/login");
-                return;
-            }
-            setFormInbound(prev => ({
-                ...prev,
-                error: err.response?.data?.message || "Failed to add stock"
-            }));
-        });
     }
 
     // Use in your JSX
@@ -385,7 +417,7 @@ export default function StuffIndex() {
                 }}
             />
 
-            <div className="container mt-5">
+            <div className="container">
 
                 {/* Replace your existing stats cards with this */}
                 <div className="row mb-4 g-3">
@@ -420,7 +452,7 @@ export default function StuffIndex() {
                     />
                 </div>
 
-                <div className="card border-0 shadow-lg">
+                <div className="card border-0 shadow-sm">
                     <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                         <h5 className="mb-0 fw-bold text-dark">List of Items</h5>
                         <div className="d-flex gap-2">
@@ -436,11 +468,20 @@ export default function StuffIndex() {
                                 />
                             </div>
                             <button
-                                className="btn btn-primary btn-sm px-3 d-flex align-items-center gap-2"
+                                className="btn btn-dark btn-sm px-3 d-flex justify-content-center align-items-center gap-2"
                                 onClick={() => setIsModalOpen(true)}
+                                style={{ width: "200px" }}
                             >
                                 <i className="bi bi-plus-lg"></i>
-                                <span>Tambah</span>
+                                <span>Add Items</span>
+                            </button>
+                            <button
+                                className="btn btn-outline-dark btn-sm px-3 d-flex justify-content-center align-items-center gap-2"
+                                onClick={exportExcel}
+                                style={{ width: "200px" }}
+                            >
+                                <i className="bi bi-plus-lg"></i>
+                                <span>Export Excel</span>
                             </button>
                         </div>
                     </div>
@@ -482,14 +523,14 @@ export default function StuffIndex() {
                                                 <td className="py-3 px-4">
                                                     <div className="d-flex justify-content-center gap-2">
                                                         <button
-                                                            className="btn btn-soft-success btn-outline-success btn-sm px-3"
+                                                            className="btn btn-soft-dark btn-outline-dark btn-sm px-3"
                                                             onClick={() => handleInboundBtn(item)} // Changed from value.id to item.id
                                                         >
                                                             <i className="bi bi-plus-lg me-1"></i>
                                                             Add Stock
                                                         </button>
                                                         <button
-                                                            className="btn btn-soft-warning btn-outline-warning btn-sm px-3"
+                                                            className="btn btn-soft-dark btn-outline-dark btn-sm px-3"
                                                             onClick={() => handleEdit(item)}
                                                         >
                                                             <i className="bi bi-pencil me-1"></i>
@@ -510,7 +551,7 @@ export default function StuffIndex() {
                                         <tr>
                                             <td colSpan={6} className="text-center py-4 text-muted">
                                                 <i className="bi bi-inbox fs-1 d-block mb-2"></i>
-                                                Tidak ada data ditemukan.
+                                                No data found
                                             </td>
                                         </tr>
                                     )}
@@ -696,8 +737,8 @@ export default function StuffIndex() {
                 </form>
             </Modal>
 
-            <Modal 
-                isOpen={isModalInboundOpen} 
+            <Modal
+                isOpen={isModalInboundOpen}
                 onclose={() => {
                     setIsModalInboundOpen(false);
                     setFormInbound({
@@ -707,7 +748,7 @@ export default function StuffIndex() {
                         proof_file: null,
                         error: null
                     });
-                }} 
+                }}
                 title={`Add Stock - ${formInbound.stuffName}`}
             >
                 <form onSubmit={handleInboundSubmit} className="needs-validation" noValidate>

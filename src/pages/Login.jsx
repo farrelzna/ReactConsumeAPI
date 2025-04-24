@@ -1,80 +1,89 @@
-import React from "react";
-import axios from "axios";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { HiMail, HiLockClosed, HiExclamationCircle } from "react-icons/hi";
 
 export default function Login() {
-    // state : menyimpan data di project react
-    // login : nama datanya, setLogin
-
     const [login, setLogin] = useState({ username: '', password: '' });
     const [error, setError] = useState([]);
-
-    // methof untuk memanipulasi yang berhubungan dengan routing
-    let navigate = useNavigate();
+    const navigate = useNavigate();
 
     function loginProcess(e) {
-        e.preventDefault(); //mengambil alih fungsi 
+        e.preventDefault();
         axios.post('http://45.64.100.26:88/API-Lumen/public/login', login)
             .then(res => {
-                console.log(res.data);
-                // ketika berhasil login, simpan data token dan user di localstorage
                 localStorage.setItem("access_token", res.data.data.access_token);
-                // JSON.stringify mengubah json menjadi string, localstorage hanya bisa disimpan string
                 localStorage.setItem("user", JSON.stringify(res.data.data.user));
-                // urutan tidak 
                 navigate("/dashboard");
-        })
-        .catch(err => {
-            setError(err.response.data);
-            // console.log(err.response.data);
-        })
+            })
+            .catch(err => {
+                setError(err.response.data);
+            });
     }
 
-
     return (
-        <div className="d-flex justify-content-center align-items-center mt-5" onSubmit={(e) => loginProcess(e)}>
-            <div className="card shadow-lg p-5" style={{ maxWidth: '100%', width: '100%', borderRadius: '7px', border: 'none' }}>
-                <div className="card-body">
-                    <h3 className="text-center mb-4 fw-bold" style={{ color: '#393E46' }}>Sign In</h3>
-                    <form>
-                        <div className="mb-3">
-                            {
-                                // object.keys(error).length : mengecek jika objeck state error pada isisnya   
-                                Object.keys(error).length > 0 ? (
-                                    <div className="alert alert-danger">
-                                        <ol className="alert alert-danger m-2 p-2">
-                                            {/* kalau data error tapi ada isinya lebih dari 0, looping isinya kalau gaada munculin yang bagian message, error.data perlu menggunakan object.entries karena bentuknya (li), error.message tdk perlu menggunakan karena bentuknya */}
-                                            {
-                                                Object.entries(error.data).length > 0 ?
-                                                Object.entries(error.data).map(([key, value]) => (
-                                                    <li>{value}</li>
-                                                )) : error.message
-                                            }
-                                        </ol>
-                                    </div>
-                                ) : ''
-                            }
-                            <label className="form-label fw-semibold d-flex justify-content-start">Username</label>
-                            <div className="input-group">
-                                <span className="input-group-text bg-light"><i className="bi bi-envelope"></i></span>
-                                <input type="text" id="username" className="form-control" placeholder="Enter your email" onChange={(e) => setLogin({ ...login, username: e.target.value })} />
+        <div className="login-container">
+            <div className="login-wrapper">
+                <div className="login-card">
+                    <div className="login-header">
+                        <h3>Welcome Back!</h3>
+                        <p>Please sign in to continue</p>
+                    </div>
+
+                    {Object.keys(error).length > 0 && (
+                        <div className="login-alert">
+                            <HiExclamationCircle size={20} />
+                            <div className="alert-content">
+                                {Object.entries(error.data).length > 0 
+                                    ? Object.entries(error.data).map(([key, value]) => (
+                                        <p key={key}>{value}</p>
+                                    ))
+                                    : error.message
+                                }
                             </div>
                         </div>
-                        <div className="mb-3">
-                            <label className="form-label fw-semibold d-flex justify-content-start">Password</label>
+                    )}
+
+                    <form onSubmit={loginProcess} className="login-form">
+                        <div className="form-group">
+                            <label>Username</label>
                             <div className="input-group">
-                                <span className="input-group-text bg-light"><i className="bi bi-lock"></i></span>
-                                <input type="password" id="password" className="form-control" placeholder="Enter your password" onChange={(e) => setLogin({ ...login, password: e.target.value })} />
+                                <span className="input-icon">
+                                    <HiMail />
+                                </span>
+                                <input 
+                                    type="text"
+                                    placeholder="Enter your username"
+                                    onChange={(e) => setLogin({ ...login, username: e.target.value })}
+                                />
                             </div>
                         </div>
-                        <button type="submit" className="btn w-100 py-2 fw-bold" style={{ backgroundColor: '#00ADB5', color: 'white' }}>Login</button>
-                        <div className="text-center mt-3">
-                            <a href="#" className="text-decoration-none text-opacity-75" style={{ color: '#393E46' }}>Forgot password?</a>
+
+                        <div className="form-group">
+                            <label>Password</label>
+                            <div className="input-group">
+                                <span className="input-icon">
+                                    <HiLockClosed />
+                                </span>
+                                <input 
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    onChange={(e) => setLogin({ ...login, password: e.target.value })}
+                                />
+                            </div>
                         </div>
-                        <div className="text-center mt-3">
-                            <span className="text-muted">Don’t have an account? </span>
-                            <a href="#" className="text-decoration-none" style={{ color: '#00ADB5' }}>Sign Up</a>
+
+                        <button type="submit" className="login-button">
+                            Sign In
+                        </button>
+
+                        <div className="login-footer">
+                            <a href="#" className="forgot-password">
+                                Forgot password?
+                            </a>
+                            <p className="signup-text">
+                                Don't have an account? <a href="#">Sign Up</a>
+                            </p>
                         </div>
                     </form>
                 </div>
