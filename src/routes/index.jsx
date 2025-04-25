@@ -5,14 +5,14 @@ import Profile from "../pages/Profile";
 import Dashboard from "../pages/Dashboard";
 import StuffIndex from "../pages/stuffs/Index";
 import InboundIndex from "../pages/stuffs/inbound";
+import Lendings from "../pages/lendings/Index";
+import LendingData from "../pages/lendings/data";
 
 import Template from "../layouts/Template";
 import PrivatePage from "../pages/middleware/PrivatePage";
 import GuestPage from "../pages/middleware/GuestPage";
 import AdminRoute from "../pages/middleware/AdminRoute";
 import StaffRoute from "../pages/middleware/StaffRoute";
-import Lendings from "../pages/lendings/index";
-
 
 export const router = createBrowserRouter([
     {
@@ -47,6 +47,7 @@ export const router = createBrowserRouter([
                         element: <StaffRoute />,
                         children: [
                             { path: "lendings", element: <Lendings /> },
+                            { path: "lendings/data", element: <LendingData /> },
                         ]
                     }
                 ]

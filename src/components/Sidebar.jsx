@@ -70,7 +70,7 @@ export default function Sidebar() {
                                     <button 
                                         className={`nav-item dropdown-toggle ${openDropdown === 'lending' ? 'active' : ''}`}
                                         onClick={() => toggleDropdown('lending')}
-                                        data-title="Lending"
+                                        data-title="Lendings"
                                     >
                                         <HiCube size={20} />
                                         {!collapsed && (
@@ -97,12 +97,15 @@ export default function Sidebar() {
                             ) : (
                                 <>
                                     <Link to="/admin/stuffs" 
-                                        className={`nav-item ${location.pathname === '/dashboard/stuffs' ? 'active' : ''}`}>
+                                        className={`nav-item ${location.pathname === '/admin/stuffs' ? 'active' : ''}`} 
+                                        data-title="Stuffs">
                                         <HiCube size={20} />
                                         {!collapsed && <span>Items</span>}
                                     </Link>
                                     <Link to="/admin/inbound" 
-                                        className={`nav-item ${location.pathname === '/dashboard/inbound' ? 'active' : ''}`}>
+                                        className={`nav-item ${location.pathname === '/admin/inbound' ? 'active' : ''}`}
+                                        data-title="Inbound">
+                                        {/* Inbound icon - Only visible when not collapsed */}
                                         <HiArrowDown size={20} />
                                         {!collapsed && <span>Inbound</span>}
                                     </Link>
@@ -110,7 +113,9 @@ export default function Sidebar() {
                             )}
 
                             <Link to="/profile" 
-                                className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
+                                className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
+                                data-title="Profile">
+                                {/* Profile icon - Always visible */}
                                 <HiUser size={20} />
                                 {!collapsed && <span>Profile</span>}
                             </Link>
@@ -119,7 +124,7 @@ export default function Sidebar() {
 
                     {/* Logout button - Only visible when logged in */}
                     <div className="sidebar-footer">
-                        <button className="btn-logout" onClick={handleLogout}>
+                        <button className="btn-logout" onClick={handleLogout} data-title="Logout">
                             <HiLogout size={20} />
                             {!collapsed && <span>Logout</span>}
                         </button>

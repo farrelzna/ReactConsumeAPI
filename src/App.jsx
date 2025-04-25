@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import './App.css';
 
 function App() {

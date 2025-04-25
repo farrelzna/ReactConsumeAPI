@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { API_URL } from "../../constant";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import Modal from "../../components/Modal";
+import PremiumModal from "../../components/Modal";
 import AlertSnackbar from "../../components/AlertSnackbar";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -99,6 +99,20 @@ export default function StuffIndex() {
         return items.slice(indexOfFirstItem, indexOfLastItem);
     };
 
+    const [sortConfig, setSortConfig] = useState({
+        key: null,
+        direction: 'asc'
+    });
+    
+    // Add this function before your return statement
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
     // Update the calculatePercentage function to be more flexible
     const calculatePercentage = (value, total) => {
         if (!total) return 0;
@@ -115,8 +129,8 @@ export default function StuffIndex() {
                     <div className="card-body p-4">
                         <div className="d-flex align-items-center justify-content-center mb-2">
                             <div className="d-flex align-items-center">
-                                <div className={`rounded-circle bg-${color} bg-opacity-10 p-2 me-3`}>
-                                    <i className={`bi ${icon} fs-4 text-${color}`}></i>
+                                <div className={`rounded-circle bg-${color} bg-opacity-10 me-3`} style={{ padding: "10px 15px 10px 15px" }}>
+                                    <i className={`bi ${icon} text-${color}`}></i>
                                 </div>
                                 <div>
                                     <h6 className="mb-0 text-muted">{title}</h6>
@@ -138,6 +152,21 @@ export default function StuffIndex() {
             </div>
         );
     };
+
+    
+    const sortItems = (items, sortConfig) => {
+        if (!sortConfig.key) return items;
+
+        return [...items].sort((a, b) => {
+            const aValue = a[sortConfig.key]?.toLowerCase();
+            const bValue = b[sortConfig.key]?.toLowerCase();
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    };
+
 
     // Calculate the totals
     const totalItems = stuff.length;
@@ -183,17 +212,6 @@ export default function StuffIndex() {
         })
         saveAs(file, "data_stuffs.xlsx");
     }
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        const filtered = stuff.filter((item) =>
-            item.name.toLowerCase().includes(search.toLowerCase())
-        );
-        setFilteredStuff(filtered);
-    }, [search, stuff]);
 
     function fetchData() {
         axios.get(`${API_URL}/stuffs`)
@@ -403,7 +421,18 @@ export default function StuffIndex() {
             });
     }
 
-    // Use in your JSX
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        const filtered = stuff.filter((item) =>
+            item.name.toLowerCase().includes(search.toLowerCase()) ||
+            item.type.toLowerCase().includes(search.toLowerCase())
+        );
+        setFilteredStuff(filtered);
+    }, [search, stuff]);
+
     return (
         <>
             <AlertSnackbar
@@ -463,14 +492,24 @@ export default function StuffIndex() {
                                 <input
                                     type="text"
                                     className="form-control form-control-sm bg-light border-0"
-                                    placeholder="Cari barang..."
+                                    placeholder="Search items or type..."
+                                    value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
+                                {search && (
+                                    <button
+                                        className="btn btn-light border-0"
+                                        onClick={() => setSearch('')}
+                                        type="button"
+                                    >
+                                        <i className="bi bi-x-lg"></i>
+                                    </button>
+                                )}
                             </div>
                             <button
                                 className="btn btn-dark btn-sm px-3 d-flex justify-content-center align-items-center gap-2"
                                 onClick={() => setIsModalOpen(true)}
-                                style={{ width: "200px" }}
+                                style={{ width: "250px" }}
                             >
                                 <i className="bi bi-plus-lg"></i>
                                 <span>Add Items</span>
@@ -478,9 +517,9 @@ export default function StuffIndex() {
                             <button
                                 className="btn btn-outline-dark btn-sm px-3 d-flex justify-content-center align-items-center gap-2"
                                 onClick={exportExcel}
-                                style={{ width: "200px" }}
+                                style={{ width: "250px" }}
                             >
-                                <i className="bi bi-plus-lg"></i>
+                                <i className="bi bi-file-earmark-excel"></i>
                                 <span>Export Excel</span>
                             </button>
                         </div>
@@ -491,16 +530,38 @@ export default function StuffIndex() {
                                 <thead className="bg-light">
                                     <tr>
                                         <th className="py-3 px-4">#</th>
-                                        <th className="py-3 px-4">Items</th>
-                                        <th className="py-3 px-4">Type</th>
+                                        <th
+                                            className="py-3 px-4 sortable"
+                                            onClick={() => requestSort('name')}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="d-flex align-items-center">
+                                                Items
+                                                <SortIcon 
+                                                    direction={sortConfig.key === 'name' ? sortConfig.direction : null} 
+                                                />
+                                            </div>
+                                        </th>
+                                        <th
+                                            className="py-3 px-4 sortable"
+                                            onClick={() => requestSort('type')}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <div className="d-flex align-items-center">
+                                                Type
+                                                <SortIcon 
+                                                    direction={sortConfig.key === 'type' ? sortConfig.direction : null}
+                                                />
+                                            </div>
+                                        </th>
                                         <th className="py-3 px-4">Stock Available</th>
                                         <th className="py-3 px-4">Stock Defective</th>
-                                        <th className="py-3 px-4 text-center">Action</th>
+                                        <th className="py-3 px-4">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredStuff.length > 0 ? (
-                                        paginate(filteredStuff).map((item, index) => (
+                                        paginate(sortItems(filteredStuff, sortConfig)).map((item, index) => (
                                             <tr key={item.id}>
                                                 <td className="py-3 px-4">
                                                     {((currentPage - 1) * itemsPerPage) + index + 1}
@@ -508,7 +569,7 @@ export default function StuffIndex() {
                                                 <td className="py-3 px-4 fw-semibold">{item.name}</td>
                                                 <td className="py-3 px-4 fw-semibold" >{item.type}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                                                    <span className="badge bg-success bg-opacity-10 text-success px-3 py-2" style={{ width: "100px" }}>
                                                         {item.stuff_stock?.total_available || 0}
                                                     </span>
                                                 </td>
@@ -516,21 +577,21 @@ export default function StuffIndex() {
                                                     <span className={`badge ${item.stuff_stock?.total_defec <= 3
                                                         ? 'bg-danger bg-opacity-10 text-danger'
                                                         : 'bg-warning bg-opacity-10 text-warning'
-                                                        } px-3 py-2`}>
+                                                        } px-3 py-2`} style={{ width: "100px" }} >
                                                         {item.stuff_stock?.total_defec || 0}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <div className="d-flex justify-content-center gap-2">
                                                         <button
-                                                            className="btn btn-soft-dark btn-outline-dark btn-sm px-3"
+                                                            className="btn btn-soft-dark btn-outline-secondary btn-sm px-3"
                                                             onClick={() => handleInboundBtn(item)} // Changed from value.id to item.id
                                                         >
                                                             <i className="bi bi-plus-lg me-1"></i>
                                                             Add Stock
                                                         </button>
                                                         <button
-                                                            className="btn btn-soft-dark btn-outline-dark btn-sm px-3"
+                                                            className="btn btn-soft-dark btn-outline-secondary btn-sm px-3"
                                                             onClick={() => handleEdit(item)}
                                                         >
                                                             <i className="bi bi-pencil me-1"></i>
@@ -570,7 +631,12 @@ export default function StuffIndex() {
                 </div>
             </div>
 
-            <Modal isOpen={isModalOpen} onclose={() => setIsModalOpen(false)} title="Add new Stuff">
+            {/* Add Modal */}
+            <PremiumModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title="Add New Item"
+            >
                 <form onSubmit={handleSubmitModal}>
                     <div className="mb-4">
                         <label className="form-label fw-semibold">
@@ -611,14 +677,23 @@ export default function StuffIndex() {
                         </button>
                     </div>
                 </form>
-            </Modal>
+            </PremiumModal>
 
-            <Modal
+            {/* Delete Modal */}
+            <PremiumModal
                 isOpen={deleteModal.isOpen}
-                onclose={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
+                onClose={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
                 title="Delete Confirmation"
+                size="sm"
             >
-                <p>Are you sure you want to delete stuff: <strong>{deleteModal.stuffName}</strong>?</p>
+                <div className="text-center mb-4">
+                    <div className="bg-danger bg-opacity-10 rounded-circle mx-auto mb-3" style={{ width: 'fit-content', padding: '20px 30px 20px 30px'  }}>
+                        <i className="bi bi-exclamation-triangle text-danger fs-2"></i>
+                    </div>
+                    <h5 className="mb-1">Delete Confirmation</h5>
+                    <p className="text-muted mb-0">Are you sure you want to delete:</p>
+                    <p className="fw-semibold mb-0">{deleteModal.stuffName}?</p>
+                </div>
 
                 <div className="d-flex gap-2 justify-content-end">
                     <button
@@ -634,18 +709,18 @@ export default function StuffIndex() {
                         Delete
                     </button>
                 </div>
-            </Modal>
+            </PremiumModal>
 
-            <Modal
+            {/* Edit Modal */}
+            <PremiumModal
                 isOpen={editModal.isOpen}
-                onclose={() => {
+                onClose={() => {
                     setEditModal({
                         isOpen: false,
                         stuffId: null,
                         error: null,
                         data: { name: '', type: '' }
                     });
-                    // Clear any existing alerts
                     setAlert({ message: null, severity: "success" });
                 }}
                 title="Edit Item"
@@ -735,11 +810,12 @@ export default function StuffIndex() {
                         </button>
                     </div>
                 </form>
-            </Modal>
+            </PremiumModal>
 
-            <Modal
+            {/* Inbound Modal */}
+            <PremiumModal
                 isOpen={isModalInboundOpen}
-                onclose={() => {
+                onClose={() => {
                     setIsModalInboundOpen(false);
                     setFormInbound({
                         stuff_id: "",
@@ -831,7 +907,33 @@ export default function StuffIndex() {
                         </button>
                     </div>
                 </form>
-            </Modal>
+            </PremiumModal>
         </>
     );
 }
+
+const SortIcon = ({ direction }) => {
+    if (!direction) {
+        return (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="text-muted ms-1">
+                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+            </svg>
+        );
+    }
+    
+    return (
+        <svg 
+            width="16" 
+            height="16" 
+            viewBox="0 0 16 16" 
+            fill="currentColor"
+            className="text-primary ms-1"
+            style={{
+                transform: direction === 'desc' ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s ease'
+            }}
+        >
+            <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+        </svg>
+    );
+};
