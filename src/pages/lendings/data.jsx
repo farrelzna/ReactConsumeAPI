@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Modal from "../../components/Modal";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import AlertSnackbar from "../../components/AlertSnackbar";
 
 export default function LendingData() {
     const [lendings, setLendings] = useState([]);
@@ -23,6 +24,10 @@ export default function LendingData() {
     const [alert, setAlert] = useState("");
 
     const navigate = useNavigate();
+
+    const filteredLendings = lendings.filter((item) =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     function fetchData() {
         axios.get(API_URL + "/lendings")
@@ -111,146 +116,234 @@ export default function LendingData() {
         saveAs(file, "data_lendings.xlsx");
     }
 
-    const filteredLendings = lendings.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     return (
-        <>
-            {alert && (
-                <div className="alert alert-success alert-dismissible fade show mx-4 mt-3" role="alert">
-                    {alert}
-                    <button
-                        type="button"
-                        className="btn-close"
-                        onClick={() => setAlert("")}
-                    ></button>
-                </div>
-            )}
+        <div className="container ">
+            <AlertSnackbar 
+                alert={alert}
+                severity="success"
+                onClose={() => setAlert("")}
+            />
 
-            <div className="d-flex justify-content-end align-items-center gap-2 my-3">
-                <form className="d-flex" role="search" onSubmit={(e) => e.preventDefault()}>
-                    <input className="form-control form-control-sm me-2" type="search" placeholder="Search" aria-label="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                    <button className="btn btn-outline-success btn-sm" type="submit">
-                        Search
-                    </button>
-                </form>
-                <button className="btn btn-success btn-sm" onClick={exportExcel}>
-                    Export Excel
-                </button>
+            <div className="card border-0 shadow-sm">
+                <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0 fw-bold text-dark">Lending History</h5>
+                    <div className="d-flex gap-2">
+                        <div className="input-group input-group-sm">
+                            <span className="input-group-text bg-light border-0">
+                                <i className="bi bi-search"></i>
+                            </span>
+                            <input 
+                                type="text"
+                                className="form-control form-control-sm bg-light border-0"
+                                placeholder="Search lendings..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            {searchTerm && (
+                                <button
+                                    className="btn btn-light border-0"
+                                    onClick={() => setSearchTerm('')}
+                                    type="button"
+                                >
+                                    <i className="bi bi-x-lg"></i>
+                                </button>
+                            )}
+                        </div>
+                        <button 
+                            className="btn btn-outline-dark btn-sm px-3 d-flex justify-content-center align-items-center gap-2"
+                            onClick={exportExcel}
+                            style={{ width: "250px" }}
+                        >
+                            <i className="bi bi-file-earmark-excel"></i>
+                            <span>Export Excel</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="card-body p-0">
+                    <div className="table-responsive">
+                        <table className="table table-hover align-middle mb-0">
+                            <thead className="bg-light">
+                                <tr>
+                                    <th className="py-3 px-4">#</th>
+                                    <th className="py-3 px-4">Name</th>
+                                    <th className="py-3 px-4">Stuff Name</th>
+                                    <th className="py-3 px-4">Total</th>
+                                    <th className="py-3 px-4">Date</th>
+                                    <th className="py-3 px-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredLendings.length > 0 ? (
+                                    filteredLendings.map((item, index) => (
+                                        <tr key={index}>
+                                            <td className="py-3 px-4">{index + 1}</td>
+                                            <td className="py-3 px-4 fw-semibold">{item.name}</td>
+                                            <td className="py-3 px-4">{item.stuff?.name}</td>
+                                            <td className="py-3 px-4">
+                                                <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2" style={{ width: "100px" }}>
+                                                    {item.total_stuff}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">{new Date(item.created_at).toLocaleDateString("id-ID", { dateStyle: 'long' })}</td>
+                                            <td className="py-3 px-4">
+                                                {item.restoration ? (
+                                                    <button
+                                                        className="btn btn-soft-info btn-sm px-3"
+                                                        onClick={() => handleBtnDetail(item)}
+                                                    >
+                                                        <i className="bi bi-info-circle me-1"></i>
+                                                        Detail
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="btn btn-soft-primary btn-sm px-3"
+                                                        onClick={() => handleBtnCreate(item)}
+                                                    >
+                                                        <i className="bi bi-plus-lg me-1"></i>
+                                                        Create
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-4 text-muted">
+                                            <i className="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            No data found
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <table className="table table-bordered table-hover table-striped">
-                <thead className="table-dark">
-                    <tr>
-                        <th rowSpan={2}>#</th>
-                        <th rowSpan={2}>Name</th>
-                        <th colSpan={2}>Stuff</th>
-                        <th rowSpan={2}>Date</th>
-                        <th rowSpan={2}>Action</th>
-                    </tr>
-                    <tr>
-                        <th>Name</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredLendings.length > 0 ? (
-                        filteredLendings.map((item, index) => (
-                            <tr key={index}>
-                                <td>{index + 1}</td>
-                                <td>{item.name}</td>
-                                <td>{item.stuff?.name}</td>
-                                <td>{item.total_stuff}</td>
-                                <td>{new Date(item.created_at).toLocaleDateString("id-ID", { dateStyle: 'long' })}</td>
-                                <td>
-                                    {item.restoration ? (
-                                        <button
-                                            className="btn btn-info btn-sm"
-                                            onClick={() => handleBtnDetail(item)}
-                                        >
-                                            Detail Restoration
-                                        </button>
-                                    ) : (
-                                        <button
-                                            className="btn btn-primary btn-sm"
-                                            onClick={() => handleBtnCreate(item)}
-                                        >
-                                            Create Restoration
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan="6" className="text-center">
-                                Data not found
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-
-            <Modal isOpen={isModalOpen} onclose={() => setIsModalOpen(false)} title="Create Restoration">
-                {
-                    Object.keys(error).length > 0 && (
-                        <div className="alert alert-danger">
-                            <ul>
-                                {
-                                    error.data && Object.entries(error.data).length > 0 ? (
-                                        Object.entries(error.data).map(([key, value]) => (
+            {/* Update Modal Styles */}
+            <Modal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title="Create Restoration"
+            >
+                <form onSubmit={handleSubmitForm} className="needs-validation" noValidate>
+                    {error && Object.keys(error).length > 0 && (
+                        <div className="alert alert-danger d-flex align-items-center" role="alert">
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>
+                                {error.data && Object.entries(error.data).length > 0 ? (
+                                    <ul className="mb-0">
+                                        {Object.entries(error.data).map(([key, value]) => (
                                             <li key={key}>{value}</li>
-                                        ))
-                                    ) : (
-                                        <li>{error.message || "An unexpected error occurred."}</li>
-                                    )
-                                }
-                            </ul>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    error.message || "An unexpected error occurred."
+                                )}
+                            </div>
                         </div>
-                    )
-                }
-                <form onSubmit={handleSubmitForm}>
-                    <div className="alert alert-info">
-                        Lending <b>{detailLending.name}</b> with total stuff <b>{detailLending.total_stuff}</b>
+                    )}
+
+                    <div className="alert alert-info d-flex align-items-center mb-4">
+                        <i className="bi bi-info-circle me-2"></i>
+                        <div>
+                            Lending <b>{detailLending.name}</b> with total stuff <b>{detailLending.total_stuff}</b>
+                        </div>
                     </div>
-                    <div className="mb-3">
-                        <label className="form-label">Total Good Stuff</label>
+
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold">
+                            Total Good Stuff <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="number"
-                            className="form-control"
+                            className={`form-control ${error && !formModal.total_good_stuff ? 'is-invalid' : ''}`}
                             onChange={(e) => setFormModal({ ...formModal, total_good_stuff: e.target.value })}
+                            placeholder="Enter total good stuff"
+                            required
                         />
+                        {error && !formModal.total_good_stuff && (
+                            <div className="invalid-feedback">Total good stuff is required</div>
+                        )}
                     </div>
-                    <div className="mb-3">
-                        <label className="form-label">Total Defec Stuff</label>
+
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold">
+                            Total Defective Stuff <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="number"
-                            className="form-control"
+                            className={`form-control ${error && !formModal.total_defec_stuff ? 'is-invalid' : ''}`}
                             onChange={(e) => setFormModal({ ...formModal, total_defec_stuff: e.target.value })}
+                            placeholder="Enter total defective stuff"
+                            required
                         />
+                        {error && !formModal.total_defec_stuff && (
+                            <div className="invalid-feedback">Total defective stuff is required</div>
+                        )}
                     </div>
-                    <button type="submit" className="btn btn-primary">Create</button>
+
+                    <div className="d-flex justify-content-end gap-2">
+                        <button 
+                            type="button" 
+                            className="btn btn-light px-4"
+                            onClick={() => setIsModalOpen(false)}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="btn btn-primary px-4"
+                            disabled={!formModal.total_good_stuff || !formModal.total_defec_stuff}
+                        >
+                            <i className="bi bi-check-lg me-2"></i>
+                            Create
+                        </button>
+                    </div>
                 </form>
             </Modal>
 
-            <Modal isOpen={isModalOpenDetail} onclose={() => setIsModalOpenDetail(false)} title="Detail Restoration">
-                <ul className="list-group">
-                    <li className="list-group-item">
-                        <span className="fw-bold">Date of Restoration:</span> {new Date(detailLending.created_at).toLocaleDateString("id-ID", { dateStyle: 'long' })}
-                    </li>
-                    <li className="list-group-item">
-                        <span className="fw-bold">Total Item of Lending:</span> {detailLending.total_stuff}
-                    </li>
-                    <li className="list-group-item">
-                        <span className="fw-bold">Total Good Stuff of Restoration:</span> {detailLending.restoration?.total_good_stuff}
-                    </li>
-                    <li className="list-group-item">
-                        <span className="fw-bold">Total Defec Stuff of Restoration:</span> {detailLending.restoration?.total_defec_stuff}
-                    </li>
-                </ul>
+            <Modal 
+                isOpen={isModalOpenDetail} 
+                onClose={() => setIsModalOpenDetail(false)} 
+                title="Restoration Details"
+            >
+                <div className="list-group list-group-flush">
+                    <div className="list-group-item px-0">
+                        <small className="text-muted d-block mb-1">Date of Restoration</small>
+                        <span className="fw-semibold">
+                            {new Date(detailLending.created_at).toLocaleDateString("id-ID", { dateStyle: 'long' })}
+                        </span>
+                    </div>
+                    <div className="list-group-item px-0">
+                        <small className="text-muted d-block mb-1">Total Items Lent</small>
+                        <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                            {detailLending.total_stuff}
+                        </span>
+                    </div>
+                    <div className="list-group-item px-0">
+                        <small className="text-muted d-block mb-1">Total Good Items Returned</small>
+                        <span className="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                            {detailLending.restoration?.total_good_stuff}
+                        </span>
+                    </div>
+                    <div className="list-group-item px-0">
+                        <small className="text-muted d-block mb-1">Total Defective Items</small>
+                        <span className="badge bg-danger bg-opacity-10 text-danger px-3 py-2">
+                            {detailLending.restoration?.total_defec_stuff}
+                        </span>
+                    </div>
+                    <div className="d-flex justify-content-end gap-2 mt-4">
+                        <button 
+                            type="button" 
+                            className="btn btn-light px-4"
+                            onClick={() => setIsModalOpen(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
             </Modal>
-
-        </>
-    )
+        </div>
+    );
 }

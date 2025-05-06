@@ -165,7 +165,7 @@ const LendingModal = ({ isOpen, onClose, onSubmit, formData, setFormData, error 
                                     </div>
                                 ))}
                             </div>
-                            <button type="button" className="btn-close" onClick={onClose}></button>
+                            <button type="button" className="btn-close" onClick={onClose}>x</button>
                         </div>
                     </div>
                 )}
@@ -214,7 +214,7 @@ const LendingModal = ({ isOpen, onClose, onSubmit, formData, setFormData, error 
                             Note <span className="text-danger">*</span>
                         </label>
                         <div className="input-group">
-                            <span className="input-group-text bg-light border-0">
+                            <span className="input-group-text bg-light border-0" style={{ height: "80px" }}>
                                 <HiClipboardList className="text-muted" />
                             </span>
                             <textarea 

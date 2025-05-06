@@ -8,13 +8,13 @@ function App() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Router>
+    <router>
       <div className="app-wrapper d-flex">
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
         <main className={`main-content ${collapsed ? 'collapsed' : ''}`}>
         </main>
       </div>
-    </Router>
+    </router>
   );
 }
 

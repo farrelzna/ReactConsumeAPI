@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { API_URL } from "../../constant";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import PremiumModal from "../../components/Modal";
+import Modal from "../../components/Modal";
 import AlertSnackbar from "../../components/AlertSnackbar";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -554,8 +554,8 @@ export default function StuffIndex() {
                                                 />
                                             </div>
                                         </th>
-                                        <th className="py-3 px-4">Stock Available</th>
-                                        <th className="py-3 px-4">Stock Defective</th>
+                                        <th className="py-3 px-4">Available Stock</th>
+                                        <th className="py-3 px-4">Defective Stock</th>
                                         <th className="py-3 px-4">Action</th>
                                     </tr>
                                 </thead>
@@ -632,97 +632,114 @@ export default function StuffIndex() {
             </div>
 
             {/* Add Modal */}
-            <PremiumModal 
+            <Modal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
                 title="Add New Item"
             >
                 <form onSubmit={handleSubmitModal}>
+                    {modalError && (
+                        <div className="alert alert-danger d-flex align-items-center" role="alert">
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>
+                                {modalError.message || "An unexpected error occurred"}
+                            </div>
+                        </div>
+                    )}
                     <div className="mb-4">
                         <label className="form-label fw-semibold">
                             Name <span className="text-danger">*</span>
                         </label>
                         <input
                             type="text"
-                            className="form-control"
+                            className={`form-control ${modalError && !formModal.name ? 'is-invalid' : ''}`}
                             placeholder="Enter stuff name"
                             onChange={(e) => setFormModal({ ...formModal, name: e.target.value })}
+                            required
                         />
+                        {modalError && !formModal.name && (
+                            <div className="invalid-feedback">Name is required</div>
+                        )}
                     </div>
                     <div className="mb-4">
                         <label className="form-label fw-semibold">
                             Type <span className="text-danger">*</span>
                         </label>
                         <select
-                            className="form-select"
+                            className={`form-select ${modalError && !formModal.type ? 'is-invalid' : ''}`}
                             onChange={(e) => setFormModal({ ...formModal, type: e.target.value })}
+                            required
                         >
                             <option value="">Select type</option>
                             <option value="HTL/KLN">HTL/KLN</option>
                             <option value="Lab">Lab</option>
                             <option value="Sarpras">Sarpras</option>
                         </select>
+                        {modalError && !formModal.type && (
+                            <div className="invalid-feedback">Type is required</div>
+                        )}
                     </div>
                     <div className="d-flex justify-content-end gap-2">
                         <button
                             type="button"
-                            className="btn btn-secondary"
+                            className="btn btn-light px-4"
                             onClick={() => setIsModalOpen(false)}
                         >
                             Cancel
                         </button>
-                        <button type="submit" className="btn btn-primary">
+                        <button 
+                            type="submit" 
+                            className="btn btn-primary px-4"
+                            disabled={!formModal.name || !formModal.type}
+                        >
                             <i className="bi bi-plus-lg me-2"></i>
                             Add Stuff
                         </button>
                     </div>
                 </form>
-            </PremiumModal>
+            </Modal>
 
             {/* Delete Modal */}
-            <PremiumModal
+            <Modal
                 isOpen={deleteModal.isOpen}
                 onClose={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
                 title="Delete Confirmation"
                 size="sm"
             >
                 <div className="text-center mb-4">
-                    <div className="bg-danger bg-opacity-10 rounded-circle mx-auto mb-3" style={{ width: 'fit-content', padding: '20px 30px 20px 30px'  }}>
+                    <div className="bg-danger bg-opacity-10 rounded-circle mx-auto mb-3" style={{ width: 'fit-content', padding: '20px 30px 20px 30px' }}>
                         <i className="bi bi-exclamation-triangle text-danger fs-2"></i>
                     </div>
                     <h5 className="mb-1">Delete Confirmation</h5>
                     <p className="text-muted mb-0">Are you sure you want to delete:</p>
                     <p className="fw-semibold mb-0">{deleteModal.stuffName}?</p>
                 </div>
-
-                <div className="d-flex gap-2 justify-content-end">
+                <div className="d-flex justify-content-end gap-2">
                     <button
-                        className="btn btn-secondary"
+                        className="btn btn-light px-4"
                         onClick={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
                     >
                         Cancel
                     </button>
                     <button
-                        className="btn btn-danger"
+                        className="btn btn-danger px-4"
                         onClick={handleConfirmDelete}
                     >
+                        <i className="bi bi-trash me-2"></i>
                         Delete
                     </button>
                 </div>
-            </PremiumModal>
+            </Modal>
 
             {/* Edit Modal */}
-            <PremiumModal
+            <Modal
                 isOpen={editModal.isOpen}
-                onClose={() => {
-                    setEditModal({
-                        isOpen: false,
-                        stuffId: null,
-                        error: null,
-                        data: { name: '', type: '' }
-                    });
-                    setAlert({ message: null, severity: "success" });
-                }}
+                onClose={() => setEditModal({
+                    isOpen: false,
+                    stuffId: null,
+                    error: null,
+                    data: { name: '', type: '' }
+                })}
                 title="Edit Item"
             >
                 <form onSubmit={handleSubmitEdit} className="needs-validation" noValidate>
@@ -810,10 +827,10 @@ export default function StuffIndex() {
                         </button>
                     </div>
                 </form>
-            </PremiumModal>
+            </Modal>
 
             {/* Inbound Modal */}
-            <PremiumModal
+            <Modal
                 isOpen={isModalInboundOpen}
                 onClose={() => {
                     setIsModalInboundOpen(false);
@@ -907,7 +924,7 @@ export default function StuffIndex() {
                         </button>
                     </div>
                 </form>
-            </PremiumModal>
+            </Modal>
         </>
     );
 }

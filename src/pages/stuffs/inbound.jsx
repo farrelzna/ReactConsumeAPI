@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { API_URL } from "../../constant";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -6,8 +6,29 @@ import Modal from "../../components/Modal";
 import AlertSnackbar from "../../components/AlertSnackbar";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Chart as ChartJS } from 'chart.js/auto';
-import { Bar } from 'react-chartjs-2';
+// import { Chart as ChartJS } from 'chart.js/auto';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement
+} from 'chart.js';
+
+// Register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement
+);
 
 
 export default function InboundIndex() {
@@ -73,7 +94,7 @@ export default function InboundIndex() {
 
     // Calculate the totals
     const totalItems = stuff.length;
-    const totalInbound = filteredStuff.reduce((total, item) => 
+    const totalInbound = filteredStuff.reduce((total, item) =>
         total + (item.total || 0), 0
     ); // New calculation for total inbound
     const totalDefec = filteredStuff.reduce((total, item) =>
@@ -125,104 +146,6 @@ export default function InboundIndex() {
         );
     };
 
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        const filtered = stuff.filter((item) => 
-            item.stuff.name.toLowerCase().includes(search.toLowerCase()) ||
-            item.stuff.type.toLowerCase().includes(search.toLowerCase())
-        );
-        setFilteredStuff(filtered);
-    }, [search, stuff]);
-
-    function fetchData() {
-        axios.get(`${API_URL}/inbound-stuffs`)
-            .then((res) => {
-                setStuffs(res.data.data);
-                console.log(res.data.data);
-            })
-            .catch(err => {
-                if (err.status === 401) {
-                    localStorage.removeItem("access_token");
-                    localStorage.removeItem("user");
-                    navigate("/login");
-                }
-                setError(err.response.data);
-            });
-    }
-
-    function handleDelete(inboundId, stuffName) {
-        setDeleteModal({
-            isOpen: true,
-            inboundId, // Changed from InboundStuffId
-            stuffName, // Will show the stuff name in modal
-            error: null
-        });
-    }
-
-    function handleConfirmDelete() {
-        axios.delete(`${API_URL}/inbound-stuffs/${deleteModal.inboundId}`, {
-        })
-            .then(res => {
-                setDeleteModal({
-                    isOpen: false,
-                    inboundId: null,
-                    stuffName: '',
-                    error: null
-                });
-                setAlert({
-                    message: "Successfully deleted inbound record",
-                    severity: "success"
-                });
-                fetchData();
-            })
-            .catch(err => {
-                if (err.response?.status === 401) {
-                    localStorage.removeItem("access_token");
-                    localStorage.removeItem("user");
-                    navigate("/login");
-                    return;
-                }
-                setDeleteModal(prev => ({
-                    ...prev,
-                    error: err.response?.data || { message: "Failed to delete inbound record" }
-                }));
-            });
-    }
-
-    function exportExcel() {
-        // Create a new workbook and add the worksheet
-        const formattedData = stuff.map((item, index) => ({
-            No: index + 1,
-            Name: item.stuff.name,
-            Type: item.stuff.type,
-            TotalAvailable: item.stuff_stock ? item.stuff_stock.total_available : 0,
-            ProofFile: item.proof_file,
-            CreatedAt: new Intl.DateTimeFormat('id-ID', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-                // hour12: false
-            }).format(new Date(item.created_at))
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(formattedData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-        const excelBuffer = XLSX.write(workbook, {
-            bookType: "xlsx",
-            type: "array",
-        });
-        const file = new Blob([excelBuffer], {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
-        })
-        saveAs(file, "data_inbound-stuffs.xlsx");
-    }
-
     const [isChartOpen, setIsChartOpen] = useState(true);
 
     // Update the chartData object
@@ -234,7 +157,7 @@ export default function InboundIndex() {
                 data: filteredStuff.map(item => item.stuff_stock?.total_available || 0),
                 backgroundColor: 'rgba(25, 135, 84, 0.2)',
                 borderColor: 'rgb(25, 135, 84)',
-                borderWidth: 1
+                borderWidth: 1,
             },
             {
                 label: 'Defective Stock',
@@ -341,9 +264,211 @@ export default function InboundIndex() {
         setSortConfig({ key, direction });
     };
 
+    // Add this after your existing chart data
+    const typeChartData = {
+        labels: ['HTL/KLN', 'Lab', 'Sarpras'],
+        datasets: [{
+            data: [
+                filteredStuff.filter(item => item.stuff.type === 'HTL/KLN').length,
+                filteredStuff.filter(item => item.stuff.type === 'Lab').length,
+                filteredStuff.filter(item => item.stuff.type === 'Sarpras').length,
+            ],
+            backgroundColor: [
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)'
+            ],
+            borderColor: [
+                'rgb(255, 159, 64)',
+                'rgb(75, 192, 192)',
+                'rgb(153, 102, 255)'
+            ],
+            borderWidth: 1,
+            borderRadius: 8,
+            spacing: 10
+        }]
+    };
+
+    const typeChartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Distribution by Type',
+                padding: 20,
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                }
+            },
+            tooltip: {
+                padding: 12,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleFont: {
+                    size: 13
+                },
+                bodyFont: {
+                    size: 12
+                },
+                callbacks: {
+                    label: function (context) {
+                        const value = context.raw;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${value} items (${percentage}%)`;
+                    }
+                }
+            }
+        },
+        cutout: '60%'
+    };
+
+    const [isTypeChartOpen, setIsTypeChartOpen] = useState(true);
+
+    // Add cleanup for charts
+    const barChartRef = useRef(null);
+    const doughnutChartRef = useRef(null);
+
+    const navigate = useNavigate();
+
+    // Update the fetchData function
+    function fetchData() {
+        const token = localStorage.getItem('access_token');
+
+        axios.get(`${API_URL}/inbound-stuffs`)
+            .then((res) => {
+                setStuffs(res.data.data);
+                setFilteredStuff(res.data.data);
+                setError(null);
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                if (err.response?.status === 401) {
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("user");
+                    navigate("/login");
+                } else {
+                    setError(err.response?.data?.message || "Failed to fetch data");
+                    setStuffs([]);
+                    setFilteredStuff([]);
+                }
+            });
+    }
+
+    function handleDelete(inboundId, stuffName) {
+        setDeleteModal({
+            isOpen: true,
+            inboundId, // Changed from InboundStuffId
+            stuffName, // Will show the stuff name in modal
+            error: null
+        });
+    }
+
+    function handleConfirmDelete() {
+        axios.delete(`${API_URL}/inbound-stuffs/${deleteModal.inboundId}`, {
+        })
+            .then(res => {
+                setDeleteModal({
+                    isOpen: false,
+                    inboundId: null,
+                    stuffName: '',
+                    error: null
+                });
+                setAlert({
+                    message: "Successfully deleted inbound record",
+                    severity: "success"
+                });
+                fetchData();
+            })
+            .catch(err => {
+                if (err.response?.status === 401) {
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("user");
+                    navigate("/login");
+                    return;
+                }
+                setDeleteModal(prev => ({
+                    ...prev,
+                    error: err.response?.data || { message: "Failed to delete inbound record" }
+                }));
+            });
+    }
+
+    function exportExcel() {
+        // Create a new workbook and add the worksheet
+        const formattedData = stuff.map((item, index) => ({
+            No: index + 1,
+            Name: item.stuff.name,
+            Type: item.stuff.type,
+            TotalAvailable: item.stuff_stock ? item.stuff_stock.total_available : 0,
+            ProofFile: item.proof_file,
+            CreatedAt: new Intl.DateTimeFormat('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                // hour12: false
+            }).format(new Date(item.created_at))
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+        const excelBuffer = XLSX.write(workbook, {
+            bookType: "xlsx",
+            type: "array",
+        });
+        const file = new Blob([excelBuffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+        })
+        saveAs(file, "data_inbound-stuffs.xlsx");
+    }
+
+    useEffect(() => {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+        fetchData();
+    }, [navigate]);
+
+    useEffect(() => {
+        const filtered = stuff.filter((item) =>
+            item.stuff.name.toLowerCase().includes(search.toLowerCase()) ||
+            item.stuff.type.toLowerCase().includes(search.toLowerCase())
+        );
+        setFilteredStuff(filtered);
+    }, [search, stuff]);
+
+    // Update the cleanup effect
+    useEffect(() => {
+        return () => {
+            if (barChartRef.current) {
+                barChartRef.current.destroy();
+            }
+            if (doughnutChartRef.current) {
+                doughnutChartRef.current.destroy();
+            }
+        };
+    }, []);
+
     return (
         <>
             <div className="container">
+                {error ? (
+                    <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                        <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>{error}</div>
+                    </div>
+                ) : null}
                 <AlertSnackbar
                     alert={alert}
                     errors={deleteModal.error}
@@ -402,7 +527,69 @@ export default function InboundIndex() {
                     <div className={`collapse ${isChartOpen ? 'show' : ''}`}>
                         <div className="card-body">
                             <div style={{ height: '400px', width: '100%' }}>
-                                <Bar data={chartData} options={chartOptions} />
+                                <Bar
+                                    key="bar-chart"
+                                    data={chartData}
+                                    options={chartOptions}
+                                    ref={barChartRef}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Add this in your JSX after the first chart */}
+                <div className="card border-0 shadow-sm mb-4">
+                    <div className="card-header bg-white py-3">
+                        <button
+                            className="d-flex align-items-center justify-content-between w-100 fw-semibold p-0 bg-transparent border-0"
+                            type="button"
+                            onClick={() => setIsTypeChartOpen(!isTypeChartOpen)}
+                            aria-expanded={isTypeChartOpen}
+                        >
+                            <span>Type Distribution</span>
+                            <ChevronIcon isOpen={isTypeChartOpen} />
+                        </button>
+                    </div>
+                    <div className={`collapse ${isTypeChartOpen ? 'show' : ''}`}>
+                        <div className="card-body">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <div style={{ height: '400px' }}>
+                                        <Doughnut
+                                            key="doughnut-chart"
+                                            data={typeChartData}
+                                            options={typeChartOptions}
+                                            ref={doughnutChartRef}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="col-lg-4">
+                                    <div className="d-flex flex-column gap-3">
+                                        {typeChartData.labels.map((label, index) => (
+                                            <div key={label} className="card border-0 bg-light">
+                                                <div className="card-body">
+                                                    <div className="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h6 className="mb-0">{label}</h6>
+                                                            <small className="text-muted">
+                                                                {typeChartData.datasets[0].data[index]} items
+                                                            </small>
+                                                        </div>
+                                                        <div className={`rounded-circle`}
+                                                            style={{
+                                                                width: '30px',
+                                                                height: '30px',
+                                                                backgroundColor: typeChartData.datasets[0].backgroundColor[index],
+                                                                border: `2px solid ${typeChartData.datasets[0].borderColor[index]}`
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -456,8 +643,8 @@ export default function InboundIndex() {
                                         >
                                             <div className="d-flex align-items-center">
                                                 Items
-                                                <SortIcon 
-                                                    direction={sortConfig.key === 'stuff.name' ? sortConfig.direction : null} 
+                                                <SortIcon
+                                                    direction={sortConfig.key === 'stuff.name' ? sortConfig.direction : null}
                                                 />
                                             </div>
                                         </th>
@@ -468,12 +655,14 @@ export default function InboundIndex() {
                                         >
                                             <div className="d-flex align-items-center">
                                                 Type
-                                                <SortIcon 
+                                                <SortIcon
                                                     direction={sortConfig.key === 'stuff.type' ? sortConfig.direction : null}
                                                 />
                                             </div>
                                         </th>
-                                        <th className="py-3 px-4">Stock Available (New Item)</th>
+                                        <th className="py-3 px-4">Available Stock</th>
+                                        <th className="py-3 px-4">Defective Stock</th>
+                                        <th className="py-3 px-4">Inbound Stock</th>
                                         <th className="py-3 px-4">Action</th>
                                         <th className="py-3 px-4">Proof File</th>
                                     </tr>
@@ -487,6 +676,16 @@ export default function InboundIndex() {
                                                 <td className="py-3 px-4 fw-semibold" >{item.stuff.type}</td>
                                                 <td className="py-3 px-4">
                                                     <span className="badge bg-success bg-opacity-10 text-success px-3 py-2" style={{ width: "150px" }}>
+                                                        {item.stuff_stock?.total_available || 0}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className="badge bg-danger bg-opacity-10 text-danger px-3 py-2" style={{ width: "150px" }}>
+                                                        {item.stuff_stock?.total_defec || 0}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2" style={{ width: "150px" }}>
                                                         {item.total}
                                                     </span>
                                                 </td>
@@ -528,7 +727,6 @@ export default function InboundIndex() {
                 </div>
             </div>
 
-            {/* Replace the existing Modal component with this PremiumModal */}
             <Modal
                 isOpen={deleteModal.isOpen}
                 onClose={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
@@ -593,16 +791,16 @@ const SortIcon = ({ direction }) => {
     if (!direction) {
         return (
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="text-muted ms-1 opacity-50">
-                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
             </svg>
         );
     }
-    
+
     return (
-        <svg 
-            width="16" 
-            height="16" 
-            viewBox="0 0 16 16" 
+        <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
             fill="currentColor"
             className="text-primary ms-1"
             style={{
@@ -610,7 +808,7 @@ const SortIcon = ({ direction }) => {
                 transition: 'transform 0.2s ease'
             }}
         >
-            <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+            <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z" />
         </svg>
     );
 };
